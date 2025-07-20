@@ -1,50 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Unzip ZIP File in Browser</title>
+  <meta charset="UTF-8">
+  <title>Unzip .ZIP File in Browser (No Server)</title>
 </head>
 <body>
-  <h1>Unzip .ZIP File in Browser (No Server)</h1>
+  <h2>Unzip .ZIP File in Browser (No Server)</h2>
+  <input type="file" id="zip-file" accept=".zip" />
+  <ul id="output"></ul>
 
-  <input type="file" id="file-input" accept=".zip" />
-  <ul id="file-list"></ul>
+  <script src="zip.min.js"></script>
+  <script>
+    zip.workerScriptsPath = "./";
 
-  <script type="module">
-    import { configure, createReader } from './zip.js';
+    document.getElementById("zip-file").addEventListener("change", async function (e) {
+      const file = e.target.files[0];
+      const output = document.getElementById("output");
+      output.innerHTML = '';
 
-    configure({
-      workerScripts: {
-        deflater: ['zip-worker.js'],
-        inflater: ['zip-worker.js']
+      const reader = new zip.ZipReader(new zip.BlobReader(file));
+      const entries = await reader.getEntries();
+
+      for (const entry of entries) {
+        const blob = await entry.getData(new zip.BlobWriter());
+        const url = URL.createObjectURL(blob);
+
+        const li = document.createElement("li");
+        li.innerHTML = `<a href="${url}" download="${entry.filename}">${entry.filename}</a>`;
+        output.appendChild(li);
       }
-    });
 
-    document.getElementById('file-input').addEventListener('change', async (event) => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const blobReader = new zip.BlobReader(new Blob([e.target.result]));
-        const zipReader = new zip.ZipReader(blobReader);
-        const entries = await zipReader.getEntries();
-
-        const fileList = document.getElementById('file-list');
-        fileList.innerHTML = '';
-
-        for (const entry of entries) {
-          const blob = await entry.getData(new zip.BlobWriter());
-          const url = URL.createObjectURL(blob);
-
-          const li = document.createElement('li');
-          li.innerHTML = `<a href="${url}" download="${entry.filename}">${entry.filename}</a>`;
-          fileList.appendChild(li);
-        }
-
-        await zipReader.close();
-      };
-      reader.readAsArrayBuffer(file);
+      await reader.close();
     });
   </script>
 </body>
