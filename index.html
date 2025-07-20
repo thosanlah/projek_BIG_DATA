@@ -29,42 +29,29 @@
   </fieldset>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script>
-    async function handleUnzip() {
-      const file = document.getElementById('zipInput').files[0];
-      const status = document.getElementById('unzipStatus');
-      if (!file || !file.name.endsWith('.zip')) {
-        status.textContent = 'Please select a .zip file.';
-        status.className = 'status error';
-        return;
-      }
-      const zip = new JSZip();
-      const contents = await zip.loadAsync(file);
-      const fileList = Object.keys(contents.files).join(', ');
-      status.textContent = 'Unzipped files: ' + fileList;
-      status.className = 'status success';
-    }
+<script>
+  async function unzipFromServer() {
+    const status = document.getElementById('unzipStatus');
+    try {
+      const response = await fetch('myfile.zip'); // ZIP file sejajar dengan index.html
+      const blob = await response.blob();
+      const zip = await JSZip.loadAsync(blob);
 
-    async function handleZip() {
-      const files = document.getElementById('filesToZip').files;
-      const status = document.getElementById('zipStatus');
-      if (!files.length) {
-        status.textContent = 'Please select files to zip.';
-        status.className = 'status error';
-        return;
+      let list = [];
+      for (const filename in zip.files) {
+        list.push(filename);
       }
-      const zip = new JSZip();
-      for (let file of files) {
-        zip.file(file.name, file);
-      }
-      const blob = await zip.generateAsync({ type: 'blob' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = 'archive.zip';
-      link.click();
-      status.textContent = 'Zip archive created successfully!';
+
+      status.textContent = 'Isi ZIP: ' + list.join(', ');
       status.className = 'status success';
+    } catch (err) {
+      status.textContent = 'Gagal membuka ZIP: ' + err.message;
+      status.className = 'status error';
     }
-  </script>
+  }
+</script>
+<button onclick="unzipFromServer()">Unzip ZIP di Server</button>
+<div id="unzipStatus" class="status"></div>
+
 </body>
 </html>
