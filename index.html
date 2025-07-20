@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Unzip ZIP File in Browser</title>
+</head>
+<body>
+  <h1>Unzip .ZIP File in Browser (No Server)</h1>
+
+  <input type="file" id="file-input" accept=".zip" />
+  <ul id="file-list"></ul>
+
+  <script type="module">
+    import { configure, createReader } from './zip.js';
+
+    configure({
+      workerScripts: {
+        deflater: ['zip-worker.js'],
+        inflater: ['zip-worker.js']
+      }
+    });
+
+    document.getElementById('file-input').addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const blobReader = new zip.BlobReader(new Blob([e.target.result]));
+        const zipReader = new zip.ZipReader(blobReader);
+        const entries = await zipReader.getEntries();
+
+        const fileList = document.getElementById('file-list');
+        fileList.innerHTML = '';
+
+        for (const entry of entries) {
+          const blob = await entry.getData(new zip.BlobWriter());
+          const url = URL.createObjectURL(blob);
+
+          const li = document.createElement('li');
+          li.innerHTML = `<a href="${url}" download="${entry.filename}">${entry.filename}</a>`;
+          fileList.appendChild(li);
+        }
+
+        await zipReader.close();
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  </script>
+</body>
+</html>
