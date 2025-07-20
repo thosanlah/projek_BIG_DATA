@@ -33,7 +33,7 @@
   async function unzipFromServer() {
     const status = document.getElementById('unzipStatus');
     try {
-      const response = await fetch('myfile.zip'); // ZIP file sejajar dengan index.html
+      const response = await fetch('hadoop-2.9.1.zip'); // ZIP file sejajar dengan index.html
       const blob = await response.blob();
       const zip = await JSZip.loadAsync(blob);
 
