@@ -1,37 +1,70 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Unzip .ZIP File in Browser (No Server)</title>
+  <title>Zip/Unzip Tool</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    label, input, select, button { display: block; margin: 10px 0; }
+    fieldset { background: #f0f0f0; padding: 15px; border: 1px solid #ccc; margin-bottom: 20px; }
+    .status { padding: 10px; margin: 10px 0; font-weight: bold; }
+    .success { background: #c0f5c0; color: green; }
+    .error { background: #f5c0c0; color: darkred; }
+  </style>
 </head>
 <body>
-  <h2>Unzip .ZIP File in Browser (No Server)</h2>
-  <input type="file" id="zip-file" accept=".zip" />
-  <ul id="output"></ul>
+  <h1>JS Archive Manager (Client Side Only)</h1>
+  <fieldset>
+    <legend>Unzip Archive</legend>
+    <input type="file" id="zipInput" accept=".zip" />
+    <button onclick="handleUnzip()">Unzip Archive</button>
+    <div id="unzipStatus" class="status"></div>
+  </fieldset>
 
-  <script src="zip.min.js"></script>
+  <fieldset>
+    <legend>Zip Files</legend>
+    <input type="file" id="filesToZip" multiple />
+    <button onclick="handleZip()">Create Zip</button>
+    <div id="zipStatus" class="status"></div>
+  </fieldset>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script>
-    zip.workerScriptsPath = "./";
-
-    document.getElementById("zip-file").addEventListener("change", async function (e) {
-      const file = e.target.files[0];
-      const output = document.getElementById("output");
-      output.innerHTML = '';
-
-      const reader = new zip.ZipReader(new zip.BlobReader(file));
-      const entries = await reader.getEntries();
-
-      for (const entry of entries) {
-        const blob = await entry.getData(new zip.BlobWriter());
-        const url = URL.createObjectURL(blob);
-
-        const li = document.createElement("li");
-        li.innerHTML = `<a href="${url}" download="${entry.filename}">${entry.filename}</a>`;
-        output.appendChild(li);
+    async function handleUnzip() {
+      const file = document.getElementById('zipInput').files[0];
+      const status = document.getElementById('unzipStatus');
+      if (!file || !file.name.endsWith('.zip')) {
+        status.textContent = 'Please select a .zip file.';
+        status.className = 'status error';
+        return;
       }
+      const zip = new JSZip();
+      const contents = await zip.loadAsync(file);
+      const fileList = Object.keys(contents.files).join(', ');
+      status.textContent = 'Unzipped files: ' + fileList;
+      status.className = 'status success';
+    }
 
-      await reader.close();
-    });
+    async function handleZip() {
+      const files = document.getElementById('filesToZip').files;
+      const status = document.getElementById('zipStatus');
+      if (!files.length) {
+        status.textContent = 'Please select files to zip.';
+        status.className = 'status error';
+        return;
+      }
+      const zip = new JSZip();
+      for (let file of files) {
+        zip.file(file.name, file);
+      }
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'archive.zip';
+      link.click();
+      status.textContent = 'Zip archive created successfully!';
+      status.className = 'status success';
+    }
   </script>
 </body>
 </html>
